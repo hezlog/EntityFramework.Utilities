@@ -3,249 +3,263 @@ using System.Linq;
 using EntityFramework.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tests.FakeDomain;
-using Tests.FakeDomain.Models;
-using System;
+using Tests.Models;
 
 namespace Tests
 {
-    [TestClass]
-    public class InsertTests 
-    {
-        [TestMethod]
-        public void InsertAll_InsertItems_WithTypeHierarchy()
-        {
-            using (var db = Context.Sql())
-            {
-                if (db.Database.Exists())
-                {
-                    db.Database.Delete();
-                }
-                db.Database.Create();
+	[TestClass]
+	public class InsertTests
+	{
+		[TestMethod]
+		public void InsertAll_InsertItems_WithTypeHierarchy()
+		{
+			using (var db = Context.Sql())
+			{
+				if (db.Database.Exists())
+				{
+					db.Database.Delete();
+				}
 
-                List<Contact> people = new List<Contact>();
-                people.Add(Contact.Build("FN1", "LN1", "Director"));
-                people.Add(Contact.Build("FN2", "LN2", "Associate"));
-                people.Add(Contact.Build("FN3", "LN3", "Vice President"));
+				db.Database.Create();
 
-                EFBatchOperation.For(db, db.People).InsertAll(people);
-            }
+				var people = new List<Contact>
+				{
+					Contact.Build("FN1", "LN1", "Director"),
+					Contact.Build("FN2", "LN2", "Associate"),
+					Contact.Build("FN3", "LN3", "Vice President")
+				};
 
-            using (var db = Context.Sql())
-            {
-                var contacts = db.People.OfType<Contact>().OrderBy(c => c.FirstName).ToList();
-                Assert.AreEqual(3, contacts.Count);
-                Assert.AreEqual("FN1", contacts.First().FirstName);
-                Assert.AreEqual("Director", contacts.First().Title);
-            }
-        }
+				EFBatchOperation.For(db, db.People).InsertAll(people);
+			}
 
-        [TestMethod]
-        public void InsertAll_InsertItems_WithTypeHierarchyBase()
-        {
-            using (var db = Context.Sql())
-            {
-                if (db.Database.Exists())
-                {
-                    db.Database.Delete();
-                }
-                db.Database.Create();
+			using (var db = Context.Sql())
+			{
+				var contacts = db.People.OfType<Contact>().OrderBy(c => c.FirstName).ToList();
+				Assert.AreEqual(3, contacts.Count);
+				Assert.AreEqual("FN1", contacts.First().FirstName);
+				Assert.AreEqual("Director", contacts.First().Title);
+			}
+		}
 
-                List<Person> people = new List<Person>();
-                people.Add(Person.Build("FN1", "LN1"));
-                people.Add(Person.Build("FN2", "LN2"));
-                people.Add(Person.Build("FN3", "LN3"));
+		[TestMethod]
+		public void InsertAll_InsertItems_WithTypeHierarchyBase()
+		{
+			using (var db = Context.Sql())
+			{
+				if (db.Database.Exists())
+				{
+					db.Database.Delete();
+				}
 
-                EFBatchOperation.For(db, db.People).InsertAll(people);
-            }
+				db.Database.Create();
 
-            using (var db = Context.Sql())
-            {
-                var contacts = db.People.OrderBy(c => c.FirstName).ToList();
-                Assert.AreEqual(3, contacts.Count);
-                Assert.AreEqual("FN1", contacts.First().FirstName);
-            }
-        }
+				var people = new List<Person>
+				{
+					Person.Build("FN1", "LN1"),
+					Person.Build("FN2", "LN2"),
+					Person.Build("FN3", "LN3")
+				};
 
-        [TestMethod]
-        public void InsertAll_InsertsItems()
-        {
-            using (var db = Context.Sql())
-            {
-                if (db.Database.Exists())
-                {
-                    db.Database.Delete();
-                }
-                db.Database.Create();
+				EFBatchOperation.For(db, db.People).InsertAll(people);
+			}
 
-                var list = new List<BlogPost>(){
-                    BlogPost.Create("T1"),
-                    BlogPost.Create("T2"),
-                    BlogPost.Create("T3")
-                };
+			using (var db = Context.Sql())
+			{
+				var contacts = db.People.OrderBy(c => c.FirstName).ToList();
+				Assert.AreEqual(3, contacts.Count);
+				Assert.AreEqual("FN1", contacts.First().FirstName);
+			}
+		}
 
-                EFBatchOperation.For(db, db.BlogPosts).InsertAll(list);
-            }
+		[TestMethod]
+		public void InsertAll_InsertsItems()
+		{
+			using (var db = Context.Sql())
+			{
+				if (db.Database.Exists())
+				{
+					db.Database.Delete();
+				}
 
-            using (var db = Context.Sql())
-            {
-                Assert.AreEqual(3, db.BlogPosts.Count());
-                Assert.AreEqual("m@m.com", db.BlogPosts.First().Author.Email);
-            }
-        }
+				db.Database.Create();
 
-        [TestMethod]
-        public void InsertAll_WithExplicitConnection_InsertsItems()
-        {
-            using (var db = Context.Sql())
-            {
-                if (db.Database.Exists())
-                {
-                    db.Database.Delete();
-                }
-                db.Database.Create();
+				var list = new List<BlogPost>
+				{
+					BlogPost.Create("T1"),
+					BlogPost.Create("T2"),
+					BlogPost.Create("T3")
+				};
 
-                var list = new List<BlogPost>(){
-                    BlogPost.Create("T1"),
-                    BlogPost.Create("T2"),
-                    BlogPost.Create("T3")
-                };
-                EFBatchOperation.For(db, db.BlogPosts).InsertAll(list, db.Database.Connection);
-            }
+				EFBatchOperation.For(db, db.BlogPosts).InsertAll(list);
+			}
 
-            using (var db = Context.Sql())
-            {
-                Assert.AreEqual(3, db.BlogPosts.Count());
-            }
-        }
+			using (var db = Context.Sql())
+			{
+				Assert.AreEqual(3, db.BlogPosts.Count());
+				Assert.AreEqual("m@m.com", db.BlogPosts.First().Author.Email);
+			}
+		}
 
-        [TestMethod]
-        public void InsertAll_WrongColumnOrder_InsertsItems()
-        {
-            using (var db = new ReorderedContext())
-            {
-                if (db.Database.Exists())
-                {
-                    db.Database.Delete();
-                }
-                db.Database.Create();
-            }
+		[TestMethod]
+		public void InsertAll_WithExplicitConnection_InsertsItems()
+		{
+			using (var db = Context.Sql())
+			{
+				if (db.Database.Exists())
+				{
+					db.Database.Delete();
+				}
 
-            using (var db = Context.Sql())
-            {
+				db.Database.Create();
 
-                var list = new List<BlogPost>(){
-                    BlogPost.Create("T1"),
-                    BlogPost.Create("T2"),
-                    BlogPost.Create("T3")
-                };
+				var list = new List<BlogPost>
+				{
+					BlogPost.Create("T1"),
+					BlogPost.Create("T2"),
+					BlogPost.Create("T3")
+				};
+				EFBatchOperation.For(db, db.BlogPosts).InsertAll(list, db.Database.Connection);
+			}
 
-                EFBatchOperation.For(db, db.BlogPosts).InsertAll(list);
-            }
+			using (var db = Context.Sql())
+			{
+				Assert.AreEqual(3, db.BlogPosts.Count());
+			}
+		}
 
-            using (var db = Context.Sql())
-            {
-                Assert.AreEqual(3, db.BlogPosts.Count());
-            }
-        }
+		[TestMethod]
+		public void InsertAll_WrongColumnOrder_InsertsItems()
+		{
+			using (var db = new ReorderedContext())
+			{
+				if (db.Database.Exists())
+				{
+					db.Database.Delete();
+				}
 
-        [TestMethod]
-        public void InsertAll_WrongColumnOrderAndRenamedColumn_InsertsItems()
-        {
-            using (var db = new RenamedAndReorderedContext())
-            {
-                if (db.Database.Exists())
-                {
-                    db.Database.Delete();
-                }
-                db.Database.Create();
-                db.Database.ExecuteSqlCommand("drop table dbo.RenamedAndReorderedBlogPosts;");
-                db.Database.ExecuteSqlCommand(RenamedAndReorderedBlogPost.CreateTableSql());
-            }
+				db.Database.Create();
+			}
 
-            using (var db = new RenamedAndReorderedContext())
-            {
+			using (var db = Context.Sql())
+			{
+				var list = new List<BlogPost>
+				{
+					BlogPost.Create("T1"),
+					BlogPost.Create("T2"),
+					BlogPost.Create("T3")
+				};
 
-                var list = new List<RenamedAndReorderedBlogPost>(){
-                    RenamedAndReorderedBlogPost.Create("T1"),
-                    RenamedAndReorderedBlogPost.Create("T2"),
-                    RenamedAndReorderedBlogPost.Create("T3")
-                };
+				EFBatchOperation.For(db, db.BlogPosts).InsertAll(list);
+			}
 
-                EFBatchOperation.For(db, db.BlogPosts).InsertAll(list);
-            }
+			using (var db = Context.Sql())
+			{
+				Assert.AreEqual(3, db.BlogPosts.Count());
+			}
+		}
 
-            using (var db = new RenamedAndReorderedContext())
-            {
-                Assert.AreEqual(3, db.BlogPosts.Count());
-            }
-        }
+		[TestMethod]
+		public void InsertAll_WrongColumnOrderAndRenamedColumn_InsertsItems()
+		{
+			using (var db = new RenamedAndReorderedContext())
+			{
+				if (db.Database.Exists())
+				{
+					db.Database.Delete();
+				}
 
-        [TestMethod]
-        public void InsertAll_NoProvider_UsesDefaultInsert()
-        {
-            string fallbackText = null;
-            Configuration.DisableDefaultFallback = false;
-            Configuration.Log = str => fallbackText = str;
+				db.Database.Create();
+				db.Database.ExecuteSqlCommand("drop table dbo.RenamedAndReorderedBlogPosts;");
+				db.Database.ExecuteSqlCommand(RenamedAndReorderedBlogPost.CreateTableSql());
+			}
 
-            using (var db = Context.SqlCe())
-            {
-                if (db.Database.Exists())
-                {
-                    db.Database.Delete();
-                }
-                db.Database.Create();
-            }
+			using (var db = new RenamedAndReorderedContext())
+			{
+				var list = new List<RenamedAndReorderedBlogPost>
+				{
+					RenamedAndReorderedBlogPost.Create("T1"),
+					RenamedAndReorderedBlogPost.Create("T2"),
+					RenamedAndReorderedBlogPost.Create("T3")
+				};
 
-            var list = new List<BlogPost>(){
-                    BlogPost.Create("T1"),
-                    BlogPost.Create("T2"),
-                    BlogPost.Create("T3")
-                };
+				EFBatchOperation.For(db, db.BlogPosts).InsertAll(list);
+			}
 
-            using (var db = Context.SqlCe())
-            {
-                EFBatchOperation.For(db, db.BlogPosts).InsertAll(list);
-            }
+			using (var db = new RenamedAndReorderedContext())
+			{
+				Assert.AreEqual(3, db.BlogPosts.Count());
+			}
+		}
 
-            using (var db = Context.SqlCe())
-            {
-                Assert.AreEqual(3, db.BlogPosts.Count());
-            }
+		[TestMethod]
+		public void InsertAll_NoProvider_UsesDefaultInsert()
+		{
+			string fallbackText = null;
+			Configuration.DisableDefaultFallback = false;
+			Configuration.Log = str => fallbackText = str;
 
-            Assert.IsNotNull(fallbackText);
-        }
+			using (var db = Context.SqlCe())
+			{
+				if (db.Database.Exists())
+				{
+					db.Database.Delete();
+				}
 
+				db.Database.Create();
+			}
 
-        [TestMethod]
-        public void InsertAll_WithForeignKey()
-        {
-            int postId = -1;
-            using (var db = Context.Sql())
-            {
-                if (db.Database.Exists())
-                {
-                    db.Database.Delete();
-                }
-                db.Database.Create();
+			var list = new List<BlogPost>
+			{
+					BlogPost.Create("T1"),
+					BlogPost.Create("T2"),
+					BlogPost.Create("T3")
+				};
 
-                var bp = BlogPost.Create("B1");
-                db.BlogPosts.Add(bp);
-                db.SaveChanges();
-                postId = bp.ID;
+			using (var db = Context.SqlCe())
+			{
+				EFBatchOperation.For(db, db.BlogPosts).InsertAll(list);
+			}
 
-                var comments = new List<Comment>(){
-                    new Comment{Text = "C1", PostId = bp.ID },
-                    new Comment{Text = "C2", PostId = bp.ID },
-                };
+			using (var db = Context.SqlCe())
+			{
+				Assert.AreEqual(3, db.BlogPosts.Count());
+			}
 
-                EFBatchOperation.For(db, db.Comments).InsertAll(comments);
-            }
+			Assert.IsNotNull(fallbackText);
+		}
 
-            using (var db = Context.Sql())
-            {
-                Assert.AreEqual(2, db.Comments.Count());
-                Assert.AreEqual(2, db.Comments.Count(c => c.PostId == postId));
-            }
-        }
-    }
+		[TestMethod]
+		public void InsertAll_WithForeignKey()
+		{
+			int postId;
+			using (var db = Context.Sql())
+			{
+				if (db.Database.Exists())
+				{
+					db.Database.Delete();
+				}
+
+				db.Database.Create();
+
+				var bp = BlogPost.Create("B1");
+				db.BlogPosts.Add(bp);
+				db.SaveChanges();
+				postId = bp.Id;
+
+				var comments = new List<Comment>
+				{
+					new Comment{Text = "C1", PostId = bp.Id },
+					new Comment{Text = "C2", PostId = bp.Id }
+				};
+
+				EFBatchOperation.For(db, db.Comments).InsertAll(comments);
+			}
+
+			using (var db = Context.Sql())
+			{
+				Assert.AreEqual(2, db.Comments.Count());
+				Assert.AreEqual(2, db.Comments.Count(c => c.PostId == postId));
+			}
+		}
+	}
 }

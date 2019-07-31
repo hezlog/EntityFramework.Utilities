@@ -1,0 +1,14 @@
+﻿[*]
+indent_style = tab
+end_of_line = crlf
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{config,cshtml,csproj,*.defaults,DotSettings,json,html,min.*,nuspec,pubxml,svg,tst,txt,xaml,xml,xsd}]
+insert_final_newline = false
+
+[*.config]
+charset = utf-8-bom
+
+[bower.json,robots.txt]
+charset = utf-8
